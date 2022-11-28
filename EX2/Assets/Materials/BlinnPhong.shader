@@ -35,6 +35,7 @@
                 struct v2f
                 {
                     float4 pos : SV_POSITION;
+                    float3 normal: TEXC00RD0;
                 };
 
                 // Calculates diffuse lighting of secondary point lights (part 3)
@@ -48,13 +49,28 @@
                 {
                     v2f output;
                     output.pos = UnityObjectToClipPos(input.vertex);
+                    output.normal = input.normal;
                     return output;
                 }
 
 
                 fixed4 frag (v2f input) : SV_Target
                 {
-                    return fixed4(0, 0, 1.0, 1.0);
+                    fixed4 colora = _AmbientColor * _LightColor0;
+
+                    float3 vertexWorld = mul(unity_ObjectToWorld, normalize(input.pos.xyz));
+                    float3 n = normalize(mul(unity_ObjectToWorld, input.normal));
+                    float3 l = normalize(_WorldSpaceLightPos0);
+
+                    fixed4 colord = max(dot(l, n), 0) * _DiffuseColor * _LightColor0;
+
+                    float3 v = normalize(_WorldSpaceCameraPos - vertexWorld);
+                    float3 h = normalize(l + v);
+
+                    fixed4 colors = pow(max(dot(n, h), 0), _Shininess) * _SpecularColor * _LightColor0;
+
+                    fixed4 finalColor = colord + colors + colora;
+                    return finalColor;
                 }
 
             ENDCG

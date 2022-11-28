@@ -46,7 +46,7 @@
                 v2f output;
                 fixed4 colora = _AmbientColor * _LightColor0;
 
-                float3 vertexWorld = mul(unity_ObjectToWorld, input.vertex.xyz);
+                float3 vertexWorld = mul(unity_ObjectToWorld, normalize(input.vertex.xyz));
                 float3 n = normalize(mul(unity_ObjectToWorld, input.normal));
                 float3 l = normalize(_WorldSpaceLightPos0);
 
