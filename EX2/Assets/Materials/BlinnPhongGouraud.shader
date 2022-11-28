@@ -11,46 +11,64 @@
     {
         Pass
         {
-            Tags { "LightMode" = "ForwardBase" } 
+            Tags
+            {
+                "LightMode" = "ForwardBase"
+            }
 
             CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "UnityCG.cginc"
+            #include "Lighting.cginc"
 
-                #pragma vertex vert
-                #pragma fragment frag
-                #include "UnityCG.cginc"
-                #include "Lighting.cginc"
+            // Declare used properties
+            uniform fixed4 _DiffuseColor;
+            uniform fixed4 _SpecularColor;
+            uniform fixed4 _AmbientColor;
+            uniform float _Shininess;
 
-                // Declare used properties
-                uniform fixed4 _DiffuseColor;
-                uniform fixed4 _SpecularColor;
-                uniform fixed4 _AmbientColor;
-                uniform float _Shininess;
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+            };
 
-                struct appdata
-                { 
-                    float4 vertex : POSITION;
-                    float3 normal : NORMAL;
-                };
-
-                struct v2f
-                {
-                    float4 pos : SV_POSITION;
-                };
-
-
-                v2f vert (appdata input)
-                {
-                    v2f output;
-                    output.pos = UnityObjectToClipPos(input.vertex);
-                    return output;
-                }
+            struct v2f
+            {
+                float4 pos : SV_POSITION;
+                fixed4 color : COLOR0;
+            };
 
 
-                fixed4 frag (v2f input) : SV_Target
-                {
-                    return fixed4(0, 0, 1.0, 1.0);
-                }
+            v2f vert(appdata input)
+            {
+                v2f output;
+                fixed4 colora = _AmbientColor * _LightColor0;
 
+                float3 vertexWorld = mul(unity_ObjectToWorld, input.vertex.xyz);
+                float3 n = normalize(mul(unity_ObjectToWorld, input.normal));
+                float3 l = normalize(_WorldSpaceLightPos0);
+
+                fixed4 colord = max(dot(l, n), 0) * _DiffuseColor * _LightColor0;
+
+                float3 v = normalize(_WorldSpaceCameraPos - vertexWorld);
+                float3 h = normalize(l + v);
+
+                fixed4 colors = pow(max(dot(n, h), 0), _Shininess) * _SpecularColor * _LightColor0;
+
+                fixed4 finalColor = colord + colors + colora;
+                output.color = finalColor;
+                output.pos = UnityObjectToClipPos(input.vertex);
+
+                return output;
+            }
+
+
+            fixed4 frag(v2f input) : SV_Target
+            {
+                return input.color;
+            }
             ENDCG
         }
     }
