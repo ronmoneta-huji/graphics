@@ -41,7 +41,23 @@
                 // Calculates diffuse lighting of secondary point lights (part 3)
                 fixed4 pointLights(v2f input)
                 {
-                    return fixed4(0, 0, 0, 0);
+                    fixed4 color_sum = fixed4(0,0,0,0);
+                    float3 n = normalize(mul(unity_ObjectToWorld, input.normal));
+                    float3 pixelWorld = mul(unity_ObjectToWorld, normalize(input.pos.xyz));
+                    
+                    
+                    for (int i=0; i < 4; i++)
+                    {
+                        float3 light_pos = float3(unity_4LightPosX0[i], unity_4LightPosY0[i], unity_4LightPosZ0[i]);
+                        float3 diff = light_pos - pixelWorld;
+                        float d = length(diff);
+                        float3 l = normalize(diff);
+                        float intens = 1.0 / (1.0 + unity_4LightAtten0[i] * pow(d,2));
+                        color_sum += intens * (max(dot(l, n), 0) * _DiffuseColor  * unity_LightColor[i]);
+                    }
+
+                    return color_sum;
+
                 }
 
 
@@ -58,18 +74,18 @@
                 {
                     fixed4 colora = _AmbientColor * _LightColor0;
 
-                    float3 vertexWorld = mul(unity_ObjectToWorld, normalize(input.pos.xyz));
+                    float3 pixelWorld = mul(unity_ObjectToWorld, normalize(input.pos.xyz));
                     float3 n = normalize(mul(unity_ObjectToWorld, input.normal));
                     float3 l = normalize(_WorldSpaceLightPos0);
 
                     fixed4 colord = max(dot(l, n), 0) * _DiffuseColor * _LightColor0;
 
-                    float3 v = normalize(_WorldSpaceCameraPos - vertexWorld);
+                    float3 v = normalize(_WorldSpaceCameraPos - pixelWorld);
                     float3 h = normalize(l + v);
 
                     fixed4 colors = pow(max(dot(n, h), 0), _Shininess) * _SpecularColor * _LightColor0;
 
-                    fixed4 finalColor = colord + colors + colora;
+                    fixed4 finalColor = colord + colors + colora + pointLights(input);
                     return finalColor;
                 }
 
